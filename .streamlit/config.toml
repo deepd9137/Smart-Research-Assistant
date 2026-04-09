@@ -1,0 +1,6 @@
+# "viewer" hides developer items only; Print + Record screencast are "viewer" menu items and stay visible.
+# "minimal" shows only items from Cloud / set_page_config; with Help/Bug/About hidden in code, the ⋮ menu
+# is empty or nearly empty (often just theme), so Print and Record screencast go away.
+# https://docs.streamlit.io/develop/api-reference/configuration/config.toml
+[client]
+toolbarMode = "minimal"
