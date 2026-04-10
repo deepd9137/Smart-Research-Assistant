@@ -34,26 +34,6 @@ flowchart LR
 4. **Memory:** Prior user/assistant turns are formatted into the prompt (last several turns).  
 5. **Bonus:** **Retrieval confidence** is derived from retrieval score (heuristic, not a calibrated probability).
 
-## Project structure
-
-```
-pdf-assistant/
-├── .env.example           # Template for API keys
-├── requirements.txt
-├── streamlit_app.py       # Streamlit entrypoint
-├── README.md
-└── app/
-    ├── __init__.py
-    ├── config.py          # Settings (chunk sizes, thresholds, model names)
-    ├── pdf_loader.py      # PDF → Documents with page + filename metadata
-    ├── chunking.py        # RecursiveCharacterTextSplitter
-    ├── embeddings.py      # Google Generative AI embeddings
-    ├── vector_store.py    # Build / load Pinecone; similarity with scores
-    ├── citations.py       # [1], [2] context blocks + reference lines
-    ├── rag_pipeline.py    # Retrieve → prompt → Gemini; confidence heuristic
-    ├── agent.py           # Tavily fallback + routing
-    └── conversation.py    # Streamlit history → LangChain messages
-```
 
 ## Chunking strategy (with reasoning)
 
