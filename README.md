@@ -97,8 +97,6 @@ This stays simpler than a full ReAct loop but matches **“admit the doc gap, th
 
 | Issue | Fix |
 |-------|-----|
-| `GOOGLE_API_KEY` invalid | Create a key in [Google AI Studio](https://aistudio.google.com/apikey); ensure billing/quota if using paid models. |
-| Chat model `404 NOT_FOUND` | Older IDs (`gemini-1.5-flash`, etc.) are removed from the current API. Default is `gemini-2.5-flash`; set `CHAT_MODEL` in `.env` or see [Gemini models](https://ai.google.dev/gemini-api/docs/models/gemini). Try `gemini-flash-latest` if a stable name changes. |
 | Embedding `404 NOT_FOUND` for `text-embedding-004` | The Developer API expects current embedding IDs (default in repo: `gemini-embedding-001`). Set `EMBEDDING_MODEL` in `.env` if you need another listed in the [embeddings docs](https://ai.google.dev/gemini-api/docs/embeddings). Rebuild the index after any embedding change; delete `data/` if you hit dimension errors. |
 | Pinecone index creation fails | Check `PINECONE_API_KEY`, cloud/region, and index name; ensure free-tier project is active and retry build. |
 | Distances always “bad” | Your threshold may be miscalibrated. Log `pairs` from `similarity_search_with_score` and adjust `max_l2_distance`. |
