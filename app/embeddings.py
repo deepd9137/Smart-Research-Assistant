@@ -1,5 +1,3 @@
-"""Gemini embedding model wrapper for LangChain."""
-
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
 from app.config import Settings

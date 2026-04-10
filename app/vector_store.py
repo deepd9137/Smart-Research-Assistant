@@ -1,9 +1,3 @@
-"""
-Pinecone vector store for production-style cloud retrieval.
-
-Metadata on each vector (document_name, page) is preserved for citations.
-"""
-
 import time
 from typing import List, Optional, Tuple
 
@@ -28,7 +22,6 @@ def _ensure_pinecone_index(settings: Settings, embeddings: Embeddings) -> None:
     if settings.pinecone_index_name in existing:
         return
 
-    # Match index dimension to current embedding model.
     probe = embeddings.embed_query("dimension probe")
     dim = len(probe)
     pc.create_index(
@@ -40,7 +33,6 @@ def _ensure_pinecone_index(settings: Settings, embeddings: Embeddings) -> None:
             region=settings.pinecone_region,
         ),
     )
-    # Wait for readiness once on first create.
     while True:
         status = pc.describe_index(settings.pinecone_index_name).status
         if status.get("ready"):
@@ -53,7 +45,6 @@ def build_vector_store(
     embeddings: Embeddings,
     settings: Settings,
 ) -> PineconeVectorStore:
-    """Create/update a Pinecone index from chunked documents."""
     if not documents:
         raise ValueError("No documents to index.")
     _ensure_pinecone_index(settings, embeddings)
@@ -67,7 +58,6 @@ def build_vector_store(
 
 
 def save_vector_store(store: PineconeVectorStore, settings: Settings) -> None:
-    """No-op for Pinecone (data is already persisted remotely)."""
     return None
 
 
@@ -75,7 +65,6 @@ def load_vector_store(
     embeddings: Embeddings,
     settings: Settings,
 ) -> Optional[PineconeVectorStore]:
-    """Load Pinecone vector store handle if credentials are configured."""
     if not settings.pinecone_api_key:
         return None
     return PineconeVectorStore(
@@ -90,12 +79,6 @@ def similarity_search_with_scores(
     query: str,
     k: int,
 ) -> List[Tuple[Document, float]]:
-    """
-    Return (document, pseudo-distance) where lower is better.
-
-    Pinecone returns relevance in [0, 1] (higher better), so we map:
-    pseudo_distance = 1 - relevance
-    """
     pairs = store.similarity_search_with_relevance_scores(query, k=k)
     out: List[Tuple[Document, float]] = []
     for doc, relevance in pairs:

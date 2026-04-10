@@ -1,15 +1,3 @@
-"""
-Agent routing: document-first RAG, then explicit web follow-up when needed.
-
-1. **Weak retrieval** (best L2 distance above threshold): state that uploads likely lack
-   relevant material, then answer from Tavily when configured.
-2. **Strong retrieval**: run RAG. If the model signals insufficient context with the
-   `__DOC_INSUFFICIENT__` marker (see rag_pipeline), we **keep** the clear doc statement
-   and run Tavily + a second LLM pass to answer from the web — not a dead-end “I don’t know.”
-
-Trade-off: distance threshold is corpus-dependent; tune `max_l2_distance` in config.
-"""
-
 from dataclasses import dataclass
 from typing import List, Sequence
 
@@ -29,14 +17,11 @@ from app.vector_store import similarity_search_with_scores
 
 @dataclass
 class AgentAnswer:
-    """Unified response for the Streamlit layer."""
-
     answer: str
     rag_result: RAGResult | None
     used_web: bool
     web_snippets: List[str]
     routing_reason: str
-    # False when PDFs did not answer (weak retrieval or __DOC_INSUFFICIENT__): hide citations/chunks in UI.
     show_document_provenance: bool = True
 
 
@@ -63,7 +48,6 @@ def _format_doc_plus_web(doc_section: str, web_section: str) -> str:
 
 
 def _fetch_tavily(query: str, settings: Settings, max_results: int = 4) -> List[str]:
-    """Pull short summaries from Tavily (official client — stable across LangChain versions)."""
     if not settings.tavily_api_key:
         return []
     if len((query or "").strip()) < 2:
@@ -72,7 +56,6 @@ def _fetch_tavily(query: str, settings: Settings, max_results: int = 4) -> List[
     try:
         resp = client.search(query, max_results=max_results)
     except Exception:
-        # Keep UI smooth if Tavily rejects a query (too short, transient API error, etc.).
         return []
     snippets: List[str] = []
     for item in resp.get("results", []) or []:
@@ -89,10 +72,6 @@ def route_and_answer(
     settings: Settings,
     chat_history: Sequence[BaseMessage] | None = None,
 ) -> AgentAnswer:
-    """
-    Document-first RAG; when the model marks insufficient context (`__DOC_INSUFFICIENT__`)
-    or retrieval is weak, run Tavily and append a web-based answer with clear section headers.
-    """
     clean_query = (query or "").strip()
     if len(clean_query) < 2:
         return AgentAnswer(
@@ -173,7 +152,6 @@ def route_and_answer(
                 web_snippets=web,
                 routing_reason=reason + " Stated document gap; answered from web.",
             )
-        # Web unavailable: still return RAG with low confidence so user sees doc-grounded attempt
         rag = run_rag(
             clean_query, vectorstore, settings, chat_history, precomputed_pairs=pairs
         )

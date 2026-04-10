@@ -1,7 +1,3 @@
-"""
-RAG generation: retrieve → optional rerank (placeholder) → cite-grounded answer + confidence.
-"""
-
 from dataclasses import dataclass
 from typing import List, Sequence, Tuple
 
@@ -14,25 +10,15 @@ from app.config import Settings
 from app.gemini_invoke import invoke_chat_with_retry
 from app.vector_store import similarity_search_with_scores
 
-
-# How far we assume L2 distance can get before "unrelated" (for confidence scaling).
 _DISTANCE_CAP = 2.0
 
-# Model emits this alone on the final line when PDF context cannot answer the question.
-# Agent then runs web search and appends a web-based answer (see agent.py).
 DOC_INSUFFICIENT_MARKER = "__DOC_INSUFFICIENT__"
 
 
 def l2_distances_to_confidence(distances: Sequence[float]) -> float:
-    """
-    Map best (minimum) L2 distance to a rough confidence in [0, 1].
-
-    Lower distance → higher confidence. This is a heuristic, not a calibrated probability.
-    """
     if not distances:
         return 0.0
     best = min(distances)
-    # Linear decay: d=0 -> 1.0, d>=cap -> 0.0
     return max(0.0, min(1.0, 1.0 - (best / _DISTANCE_CAP)))
 
 
@@ -40,7 +26,7 @@ def l2_distances_to_confidence(distances: Sequence[float]) -> float:
 class RAGResult:
     answer: str
     citations: List[CitationRef]
-    source_excerpts: List[Tuple[str, str]]  # (label, short excerpt) for optional UI
+    source_excerpts: List[Tuple[str, str]]
     confidence: float
     retrieved_distances: List[float]
     used_documents: bool
@@ -57,7 +43,6 @@ Rules:
 
 
 def _format_history(messages: Sequence[BaseMessage], max_turns: int = 6) -> str:
-    """Last N conversational turns as plain text for the prompt."""
     if not messages:
         return ""
     recent = list(messages)[-max_turns:]
@@ -77,11 +62,6 @@ def run_rag(
     chat_history: Sequence[BaseMessage] | None = None,
     precomputed_pairs: List[Tuple[Document, float]] | None = None,
 ) -> RAGResult:
-    """
-    Retrieve top-k chunks, build grounded prompt, call Gemini.
-
-    Pass `precomputed_pairs` when the caller already ran similarity search (avoids duplicate work).
-    """
     if not settings.google_api_key:
         raise ValueError("GOOGLE_API_KEY is required.")
 
@@ -120,7 +100,6 @@ If documents are insufficient, end with the marker line __DOC_INSUFFICIENT__ as 
     )
     answer = response.content if hasattr(response, "content") else str(response)
 
-    # Short excerpts for optional "source highlights" in UI (first 220 chars per chunk)
     excerpts: List[Tuple[str, str]] = []
     for r, d in zip(refs, docs):
         label = f"[{r.index}]"
@@ -140,10 +119,6 @@ If documents are insufficient, end with the marker line __DOC_INSUFFICIENT__ as 
 
 
 def split_rag_answer_for_web_followup(answer: str) -> Tuple[str, bool]:
-    """
-    If the model followed instructions, the answer ends with DOC_INSUFFICIENT_MARKER.
-    Returns (visible_document_only_text, needs_web_followup).
-    """
     text = (answer or "").strip()
     if not text:
         return "", True
@@ -170,7 +145,6 @@ def run_web_after_doc_gap(
     settings: Settings,
     chat_history: Sequence[BaseMessage] | None = None,
 ) -> str:
-    """Synthesize the web-only answer. Caller already showed the doc gap above — no repetition here."""
     if not settings.google_api_key:
         raise ValueError("GOOGLE_API_KEY is required.")
 
@@ -210,7 +184,6 @@ def run_web_augmented_answer(
     web_snippets: List[str],
     chat_history: Sequence[BaseMessage] | None = None,
 ) -> str:
-    """Synthesize an answer from Tavily snippets (already fetched)."""
     if not settings.google_api_key:
         raise ValueError("GOOGLE_API_KEY is required.")
 

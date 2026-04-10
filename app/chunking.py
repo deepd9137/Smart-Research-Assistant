@@ -1,10 +1,3 @@
-"""
-Text chunking for RAG.
-
-RecursiveCharacterTextSplitter tries splits on paragraphs, newlines, then spaces — good
-for keeping related sentences together vs fixed windows.
-"""
-
 from typing import List
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -23,9 +16,5 @@ def make_splitter(settings: Settings) -> RecursiveCharacterTextSplitter:
 
 
 def chunk_documents(documents: List[Document], settings: Settings) -> List[Document]:
-    """
-    Split page-level documents into smaller chunks.
-    Metadata (document_name, page, source) is copied onto each chunk by LangChain.
-    """
     splitter = make_splitter(settings)
     return splitter.split_documents(documents)

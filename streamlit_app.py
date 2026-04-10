@@ -1,12 +1,3 @@
-"""
-Smart Research Assistant — Streamlit entrypoint.
-
-Run locally:
-    pip install -r requirements.txt
-    cp .env.example .env   # add keys
-    streamlit run streamlit_app.py
-"""
-
 from __future__ import annotations
 
 import tempfile
@@ -17,7 +8,6 @@ import streamlit as st
 from dotenv import load_dotenv
 from streamlit.errors import StreamlitSecretNotFoundError
 
-# Load .env from project root when Streamlit starts
 load_dotenv(Path(__file__).resolve().parent / ".env")
 from app.agent import route_and_answer
 from app.chunking import chunk_documents
@@ -31,10 +21,8 @@ MAX_PDFS = 5
 
 
 def _hydrate_streamlit_secrets() -> None:
-    """On Streamlit Cloud, keys live in st.secrets — copy into os.environ for Settings()."""
     import os
 
-    # Local dev often has no secrets.toml; `key in st.secrets` triggers parse and raises.
     try:
         for key in ("GOOGLE_API_KEY", "TAVILY_API_KEY"):
             if key in st.secrets:
@@ -57,9 +45,7 @@ def _init_session() -> None:
 
 
 def _settings() -> Any:
-    # Re-read .env so key edits are picked up without a full process restart.
     load_dotenv(Path(__file__).resolve().parent / ".env", override=True)
-    # Fresh read so Streamlit Cloud secrets apply after first load
     return get_settings()
 
 
@@ -119,7 +105,7 @@ def main() -> None:
                         st.session_state.indexed_files = [f.name for f in files]
                         save_vector_store(store, _settings())
                         st.success(f"Indexed {len(chunks)} chunks from {len(files)} file(s).")
-                    except Exception as e:  # noqa: BLE001 — show in UI
+                    except Exception as e:
                         st.session_state.build_error = str(e)
                         st.error(str(e))
 
@@ -150,7 +136,6 @@ def main() -> None:
                 for label, ex in meta["excerpts"]:
                     st.markdown(f"**{label}** {ex}")
 
-    # Render prior turns (including metadata for assistant messages)
     for msg in st.session_state.messages:
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
@@ -190,7 +175,7 @@ def main() -> None:
                     settings,
                     chat_history=hist,
                 )
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 err = str(e)
                 if "429" in err or "RESOURCE_EXHAUSTED" in err or "quota" in err.lower():
                     st.error(
